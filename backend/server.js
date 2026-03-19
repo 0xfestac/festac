@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("WORKING 🔥");
+  res.send("FESTAC IS ACTIVE 🔥");
 });
 
 app.use(express.json());
