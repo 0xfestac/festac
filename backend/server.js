@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect("mongodb://127.0.0.1:27017/festac");
+mongoose.connect("mongodb+srv://festac2009_db_user:CDqWk0yit37LIPsu@festac.hilikvj.mongodb.net/?appName=festac");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
