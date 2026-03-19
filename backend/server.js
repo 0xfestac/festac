@@ -14,4 +14,8 @@ mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ ERROR:", err.message));
 
+app.get("/", (req, res) => {
+  res.send("FESTAC API is running 🚀");
+});
+
 app.listen(5000, () => console.log("Server running on port 5000"));
