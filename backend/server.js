@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
+
+app.get("/", (req, res) => {
+  res.send("WORKING 🔥");
+});
+
 app.use(express.json());
 app.use(cors());
 
@@ -13,9 +18,5 @@ console.log("🔥 USING ATLAS:", MONGO_URL);
 mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ ERROR:", err.message));
-
-app.get("/", (req, res) => {
-  res.send("FESTAC API is running 🚀");
-});
 
 app.listen(5000, () => console.log("Server running on port 5000"));
