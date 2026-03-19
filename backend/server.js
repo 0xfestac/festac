@@ -10,7 +10,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect("mongodb+srv://festac2009_db_user:CDqWk0yit37LIPsu@festac.hilikvj.mongodb.net/?appName=festac");
+mongoose.connect("mongodb+srv://<db_username>:<db_password>@festac.hilikvj.mongodb.net/?appName=festac")
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
