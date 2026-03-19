@@ -10,6 +10,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+console.log("CONNECTING TO:", "mongodb+srv://festac:Fest1234@festac.hilikvj.mongodb.net/festac?retryWrites=true&w=majority");
+
 mongoose.connect("mongodb+srv://festac:Fest1234@festac.hilikvj.mongodb.net/festac?retryWrites=true&w=majority")
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌", err.message));
