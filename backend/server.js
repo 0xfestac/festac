@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect("mongodb+srv://festac:123456@festac.hilikvj.mongodb.net/festac")
+mongoose.connect("mongodb+srv://festac:Fest1234@festac.hilikvj.mongodb.net/festac")
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log(err));
 
