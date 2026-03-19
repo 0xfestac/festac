@@ -8,7 +8,7 @@ export default function App() {
   const [token, setToken] = useState("");
   const [balance, setBalance] = useState(0);
 
-  const API = "http://YOUR_IP:5000/api";
+  const API = "http://127.0.0.1:5000";
 
   const register = async () => {
     await axios.post(`${API}/auth/register`, { email, password });
