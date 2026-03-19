@@ -9,13 +9,19 @@ module.exports = (req, res, next) => {
     return res.status(401).send("No token provided");
   }
 
-  const token = authHeader.split(" ")[1];
+  // Check format properly
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).send("Invalid token format");
+  }
+
+  const token = authHeader.slice(7).trim(); // safer than split
 
   try {
     const decoded = jwt.verify(token, SECRET);
     req.user = decoded;
     next();
   } catch (err) {
+    console.log("TOKEN ERROR:", err.message); // helps debugging
     res.status(401).send("Invalid token");
   }
 };
