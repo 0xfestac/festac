@@ -28,3 +28,18 @@ router.post("/send", auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// Save transaction
+sender.transactions.push({
+  type: "sent",
+  email: toEmail,
+  amount
+});
+
+receiver.transactions.push({
+  type: "received",
+  email: sender.email,
+  amount
+});
+
+
