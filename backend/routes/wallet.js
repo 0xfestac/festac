@@ -41,8 +41,11 @@ router.post("/send", auth, async (req, res) => {
     }
 
     // ✅ DAILY LIMIT CHECK
-    if (sender.dailySent + amount > 2000) {
-      return res.status(400).send("Daily limit reached");
+   const amt = Number(amt);
+
+if (isNaN(amt)) {
+  return res.status(400).send("Amount must be a number");
+}
     }
 
     // Balance check
