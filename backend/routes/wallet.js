@@ -3,70 +3,35 @@ const User = require("../models/User");
 const auth = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
 
-// Get balance
+// Balance
 router.get("/balance", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.json({ balance: user.balance });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
+  const user = await User.findById(req.user.id);
+  res.json({ balance: user.balance });
 });
 
-// Send money
+// Send
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
 
-    // validate input
-    if (!toEmail || !amount || !pin) {
-      return res.status(400).send("All fields required");
-    }
-
     const sender = await User.findById(req.user.id);
     const receiver = await User.findOne({ email: toEmail });
 
-    if (!receiver) {
-      return res.status(404).send("Receiver not found");
-    }
+    if (!receiver) return res.status(404).send("Receiver not found");
 
-    // check PIN
-    if (!sender.pin) {
-      return res.status(400).send("Set PIN first");
-    }
+    if (!sender.pin) return res.status(400).send("Set PIN first");
 
-    const validPin = await bcrypt.compare(pin, sender.pin);
-    if (!validPin) {
-      return res.status(400).send("Invalid PIN");
-    }
+    const valid = await bcrypt.compare(pin, sender.pin);
+    if (!valid) return res.status(400).send("Wrong PIN");
 
-    // prevent self transfer
-    if (sender._id.toString() === receiver._id.toString()) {
-      return res.status(400).send("Cannot send to yourself");
-    }
-
-    // check balance
-    if (sender.balance < amount) {
+    if (sender.balance < amount)
       return res.status(400).send("Insufficient funds");
-    }
 
-    // transfer
     sender.balance -= amount;
     receiver.balance += amount;
 
-    // save transactions
-    sender.transactions.push({
-      type: "sent",
-      email: toEmail,
-      amount
-    });
-
-    receiver.transactions.push({
-      type: "received",
-      email: sender.email,
-      amount
-    });
+    sender.transactions.push({ type: "sent", email: toEmail, amount });
+    receiver.transactions.push({ type: "received", email: sender.email, amount });
 
     await sender.save();
     await receiver.save();
@@ -79,15 +44,10 @@ router.post("/send", auth, async (req, res) => {
   }
 });
 
-// Get transactions
+// Transactions
 router.get("/transactions", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.json(user.transactions);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
+  const user = await User.findById(req.user.id);
+  res.json(user.transactions);
 });
 
 module.exports = router;
