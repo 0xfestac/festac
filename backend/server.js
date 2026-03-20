@@ -16,7 +16,7 @@ app.use(cors());
 
 // ✅ Health check
 app.get("/", (req, res) => {
-  res.send("🚀 FESTAC IS ACTIVE");
+  res.send("FESTAC IS ACTIVE ❤️‍🔥");
 });
 
 // ✅ MongoDB connection
