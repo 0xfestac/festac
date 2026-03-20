@@ -32,4 +32,28 @@ router.post("/login", async (req, res) => {
   res.json({ token });
 });
 
+// Set transaction PIN
+router.post("/set-pin", auth, async (req, res) => {
+  try {
+    const { pin } = req.body;
+
+    if (!pin || pin.length !== 4) {
+      return res.status(400).send("PIN must be 4 digits");
+    }
+
+    const user = await User.findById(req.user.id);
+
+    const hashedPin = await bcrypt.hash(pin, 10);
+    user.pin = hashedPin;
+
+    await user.save();
+
+    res.send("PIN set successfully");
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
 module.exports = router;
