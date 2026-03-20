@@ -33,13 +33,15 @@ router.post("/send", auth, async (req, res) => {
 
     // ✅ DAILY LIMIT RESET
     const today = new Date().toDateString();
-    const last = new Date(sender.lastReset).toDateString();
+const last = sender.lastReset
+  ? new Date(sender.lastReset).toDateString()
+  : null;
 
-    if (today !== last) {
-      sender.dailySent = 0;
-      sender.lastReset = new Date();
-    }
-
+if (today !== last) {
+  sender.dailySent = 0;
+  sender.lastReset = new Date();
+}
+    
     // ✅ DAILY LIMIT CHECK
    const amt = Number(amt);
 
