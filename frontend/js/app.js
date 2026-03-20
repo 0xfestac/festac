@@ -245,3 +245,4 @@ function showToast(message) {
     toast.style.display = "none";
   }, 3000);
 }
+app.use(cors());
