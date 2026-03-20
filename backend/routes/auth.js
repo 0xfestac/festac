@@ -55,6 +55,9 @@ router.post("/set-pin", auth, async (req, res) => {
     console.error(err);
     res.status(500).send("Server error");
   }
+    const hashedPin = await bcrypt.hash(pin, 10);
+user.pin = hashedPin;
+await user.save();
 });
 
 module.exports = router;
