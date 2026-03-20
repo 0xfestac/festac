@@ -1,17 +1,34 @@
 const router = require("express").Router();
 const User = require("../models/User");
+const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
 
-// Edit user balance
-router.post("/edit-balance", async (req, res) => {
-  const { email, newBalance } = req.body;
+// 💰 Fund user account
+router.post("/fund", auth, admin, async (req, res) => {
+  try {
+    const { email, amount } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(404).send("User not found");
+    if (!email || !amount) {
+      return res.status(400).json("All fields required");
+    }
 
-  user.balance = newBalance;
-  await user.save();
+    const user = await User.findOne({ email });
 
-  res.send("Balance updated");
+    if (!user) {
+      return res.status(404).json("User not found");
+    }
+
+    user.balance += Number(amount);
+    await user.save();
+
+    res.json({
+      message: "Account funded successfully",
+      newBalance: user.balance
+    });
+
+  } catch (err) {
+    res.status(500).json(err.message);
+  }
 });
 
 module.exports = router;
