@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
 app.use(express.json());
 app.use(cors());
 
-const MONGO_URL = "mongodb+srv://festac:Fest1234@festac.hilikvj.mongodb.net/festac?retryWrites=true&w=majority";
+const MONGO_URL = process.env.MONGO_URL;
 
 console.log("🔥 USING ATLAS:", MONGO_URL);
 
