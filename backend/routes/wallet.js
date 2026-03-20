@@ -1,18 +1,34 @@
+require("dotenv").config();
+
 const router = require("express").Router();
 const User = require("../models/User");
-const auth = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const auth = require("../middleware/auth");
 
-// Get balance
-router.get("/balance", auth, async (req, res) => {
+const SECRET = process.env.JWT_SECRET;
+
+// Register
+router.post("/register", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const { email, password } = req.body;
 
-    if (!user) {
-      return res.status(404).send("User not found");
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    res.json({ balance: user.balance });
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      email,
+      password: hashed,
+      balance: 0.99
+    });
+
+    await user.save();
+
+    res.json({ message: "User created with $0.99 bonus", balance: user.balance });
 
   } catch (err) {
     console.error(err);
@@ -20,72 +36,20 @@ router.get("/balance", auth, async (req, res) => {
   }
 });
 
-
-// Send money (WITH PIN)
-router.post("/send", auth, async (req, res) => {
+// Login
+router.post("/login", async (req, res) => {
   try {
-    const { toEmail, amount, pin } = req.body;
-    console.log("PIN IN DB:", sender.pin);
+    const { email, password } = req.body;
 
-    // Basic validation
-    if (!toEmail || !amount || amount <= 0 || !pin) {
-      return res.status(400).send("Invalid input");
-    }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).send("User not found");
 
-    const sender = await User.findById(req.user.id);
-    const receiver = await User.findOne({ email: toEmail });
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).send("Invalid password");
 
-    if (!sender) return res.status(404).send("Sender not found");
-    if (!receiver) return res.status(404).send("Receiver not found");
+    const token = jwt.sign({ id: user._id }, SECRET);
 
-    // Check if PIN exists
-    if (!sender.pin) {
-      return res.status(400).send("Set PIN first");
-    }
-
-    // Validate PIN
-    const isPinValid = await bcrypt.compare(pin, sender.pin);
-    if (!isPinValid) {
-      return res.status(401).send("Invalid PIN");
-    }
-
-    // Prevent sending to yourself
-    if (sender._id.toString() === receiver._id.toString()) {
-      return res.status(400).send("Cannot send to yourself");
-    }
-
-    // Check balance
-    if (sender.balance < amount) {
-      return res.status(400).send("Insufficient funds");
-    }
-
-    // Ensure transactions array exists
-    if (!sender.transactions) sender.transactions = [];
-    if (!receiver.transactions) receiver.transactions = [];
-
-    // Update balances
-    sender.balance -= amount;
-    receiver.balance += amount;
-
-    // Save transactions
-    sender.transactions.push({
-      type: "sent",
-      email: receiver.email,
-      amount,
-      date: new Date()
-    });
-
-    receiver.transactions.push({
-      type: "received",
-      email: sender.email,
-      amount,
-      date: new Date()
-    });
-
-    await sender.save();
-    await receiver.save();
-
-    res.send("Transfer successful");
+    res.json({ token });
 
   } catch (err) {
     console.error(err);
@@ -93,17 +57,24 @@ router.post("/send", auth, async (req, res) => {
   }
 });
 
-
-// Get transactions
-router.get("/transactions", auth, async (req, res) => {
+// Set PIN
+router.post("/set-pin", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const { pin } = req.body;
 
-    if (!user) {
-      return res.status(404).send("User not found");
+    if (!pin || pin.length !== 4) {
+      return res.status(400).send("PIN must be 4 digits");
     }
 
-    res.json(user.transactions || []);
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).send("User not found");
+
+    const hashedPin = await bcrypt.hash(pin, 10);
+    user.pin = hashedPin;
+
+    await user.save();
+
+    res.send("PIN set successfully");
 
   } catch (err) {
     console.error(err);
