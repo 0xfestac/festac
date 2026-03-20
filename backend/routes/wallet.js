@@ -77,7 +77,10 @@ if (isNaN(amt)) {
     await sender.save();
     await receiver.save();
 
-    res.send("Transfer successful");
+    res.json({
+  message: "Transfer successful",
+  balance: sender.balance
+});
 
   } catch (err) {
     console.error(err);
