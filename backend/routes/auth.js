@@ -1,16 +1,22 @@
+require("dotenv").config();
+
 const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
 
+const SECRET = process.env.JWT_SECRET;
+
 // Register
 router.post("/register", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const exist = await User.findOne({ email });
-    if (exist) return res.status(400).send("User exists");
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -22,9 +28,10 @@ router.post("/register", async (req, res) => {
 
     await user.save();
 
-    res.send("User created");
+    res.json({ message: "User created", balance: user.balance });
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
@@ -37,13 +44,10 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).send("User not found");
 
-    const valid = await require("bcryptjs").compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).send("Invalid password");
 
-    const token = require("jsonwebtoken").sign(
-      { id: user._id },
-      process.env.JWT_SECRET
-    );
+    const token = jwt.sign({ id: user._id }, SECRET);
 
     res.json({ token });
 
@@ -63,13 +67,17 @@ router.post("/set-pin", auth, async (req, res) => {
     }
 
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).send("User not found");
 
-    user.pin = await bcrypt.hash(pin, 10);
+    const hashedPin = await bcrypt.hash(pin, 10);
+    user.pin = hashedPin;
+
     await user.save();
 
-    res.send("PIN set");
+    res.send("PIN set successfully");
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
