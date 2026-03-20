@@ -84,3 +84,25 @@ button:hover {
   margin-top: 10px;
   border-radius: 10px;
 }
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+  background: #1e293b;
+  padding: 20px;
+  margin: 20% auto;
+  width: 80%;
+  border-radius: 12px;
+  text-align: center;
+}
+.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
