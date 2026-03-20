@@ -1,9 +1,11 @@
 require("dotenv").config();
-const authRoutes = require("./routes/auth");
-const walletRoutes = require("./routes/wallet");
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+
+const authRoutes = require("./routes/auth");
+const walletRoutes = require("./routes/wallet");
 
 const app = express();
 
@@ -18,7 +20,7 @@ const MONGO_URL = process.env.MONGO_URL;
 
 mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ ERROR:", err));
+  .catch(err => console.log("❌ ERROR:", err.message));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
@@ -26,6 +28,3 @@ app.use("/api/wallet", walletRoutes);
 app.listen(5000, () => {
   console.log("🚀 Server running on port 5000");
 });
-
-
-
