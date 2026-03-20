@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const bcrypt = require("bcryptjs");
 
 // Get balance
 router.get("/balance", auth, async (req, res) => {
@@ -20,14 +21,13 @@ router.get("/balance", auth, async (req, res) => {
 });
 
 
-// Send money
+// Send money (WITH PIN)
 router.post("/send", auth, async (req, res) => {
   try {
-    const { toEmail, amount } = req.body;
-    const bcrypt = require("bcryptjs"); // add this at top
+    const { toEmail, amount, pin } = req.body;
 
-    // Validation
-    if (!toEmail || !amount || amount <= 0) {
+    // Basic validation
+    if (!toEmail || !amount || amount <= 0 || !pin) {
       return res.status(400).send("Invalid input");
     }
 
@@ -36,6 +36,17 @@ router.post("/send", auth, async (req, res) => {
 
     if (!sender) return res.status(404).send("Sender not found");
     if (!receiver) return res.status(404).send("Receiver not found");
+
+    // Check if PIN exists
+    if (!sender.pin) {
+      return res.status(400).send("Set PIN first");
+    }
+
+    // Validate PIN
+    const isPinValid = await bcrypt.compare(pin, sender.pin);
+    if (!isPinValid) {
+      return res.status(401).send("Invalid PIN");
+    }
 
     // Prevent sending to yourself
     if (sender._id.toString() === receiver._id.toString()) {
@@ -59,13 +70,15 @@ router.post("/send", auth, async (req, res) => {
     sender.transactions.push({
       type: "sent",
       email: receiver.email,
-      amount
+      amount,
+      date: new Date()
     });
 
     receiver.transactions.push({
       type: "received",
       email: sender.email,
-      amount
+      amount,
+      date: new Date()
     });
 
     await sender.save();
