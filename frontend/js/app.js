@@ -49,7 +49,7 @@ async function login() {
 
   } catch (err) {
     document.body.classList.remove("loading");
-    alert("Error logging in");
+    showToast("Error logging in");
   }
 }
 
@@ -69,11 +69,11 @@ async function register() {
       body: JSON.stringify({ email, password })
     });
 
-    alert("Account created!");
+    showToast("Account created!");
     window.location = "index.html";
 
   } catch (err) {
-    alert("Registration failed");
+    showToast failed");
   }
 }
 
@@ -135,11 +135,11 @@ async function confirmSend() {
 
     const msg = await res.text();
 
-    alert(msg);
+    showToast;
     closeModal();
 
   } catch (err) {
-    alert("Transfer failed");
+    showToast("Transfer failed");
   }
 }
 
