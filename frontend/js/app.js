@@ -205,3 +205,34 @@ if (window.location.pathname.includes("dashboard")) {
 if (window.location.pathname.includes("transactions")) {
   loadTransactions();
 }
+
+// =====================
+// FUND WALLET
+// =====================
+async function fundWallet() {
+  const amount = getInput("amount");
+
+  if (!amount) return showToast("Enter amount");
+
+  try {
+    const res = await fetch(`${API}/wallet/fund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: getToken()
+      },
+      body: JSON.stringify({ amount })
+    });
+
+    const msg = await res.text();
+    showToast(msg);
+
+  } catch (err) {
+    showToast("Funding failed");
+  }
+}
+
+// NAV
+function goFund() {
+  window.location = "fund.html";
+}
