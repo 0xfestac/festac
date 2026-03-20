@@ -1,100 +1,207 @@
 const API = "http://localhost:5000/api";
 
-// TOKEN
-function saveToken(t) { localStorage.setItem("token", t); }
-function getToken() { return localStorage.getItem("token"); }
+// =====================
+// TOKEN HANDLING
+// =====================
+function saveToken(token) {
+  localStorage.setItem("token", token);
+}
 
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+// =====================
+// HELPER
+// =====================
+function getInput(id) {
+  return document.getElementById(id)?.value;
+}
+
+// =====================
 // LOGIN
+// =====================
 async function login() {
-  const email = emailInput("email");
-  const password = emailInput("password");
+  document.body.classList.add("loading");
 
-  const res = await fetch(`${API}/auth/login`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ email, password })
-  });
+  const email = getInput("email");
+  const password = getInput("password");
 
-  const data = await res.json();
-  saveToken(data.token);
-  window.location = "dashboard.html";
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    document.body.classList.remove("loading");
+
+    if (data.token) {
+      saveToken(data.token);
+      window.location = "dashboard.html";
+    } else {
+      alert("Login failed");
+    }
+
+  } catch (err) {
+    document.body.classList.remove("loading");
+    alert("Error logging in");
+  }
 }
 
+// =====================
 // REGISTER
+// =====================
 async function register() {
-  const email = emailInput("email");
-  const password = emailInput("password");
+  const email = getInput("email");
+  const password = getInput("password");
 
-  await fetch(`${API}/auth/register`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ email, password })
-  });
+  try {
+    await fetch(`${API}/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
 
-  window.location = "index.html";
+    alert("Account created!");
+    window.location = "index.html";
+
+  } catch (err) {
+    alert("Registration failed");
+  }
 }
 
-// BALANCE
+// =====================
+// LOAD BALANCE
+// =====================
 async function loadBalance() {
-  const res = await fetch(`${API}/wallet/balance`, {
-    headers: { Authorization: getToken() }
-  });
+  try {
+    const res = await fetch(`${API}/wallet/balance`, {
+      headers: {
+        Authorization: getToken()
+      }
+    });
 
-  const data = await res.json();
-  document.getElementById("balance").innerText = `$${data.balance}`;
+    const data = await res.json();
+
+    const el = document.getElementById("balance");
+    if (el) {
+      el.innerText = `$${data.balance}`;
+    }
+
+  } catch (err) {
+    console.log("Balance error");
+  }
 }
 
-// SEND
-async function sendMoney() {
-  const toEmail = emailInput("toEmail");
-  const amount = emailInput("amount");
-  const pin = emailInput("pin");
-
-  const res = await fetch(`${API}/wallet/send`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getToken()
-    },
-    body: JSON.stringify({ toEmail, amount, pin })
-  });
-
-  alert(await res.text());
+// =====================
+// PIN MODAL
+// =====================
+function openPinModal() {
+  document.getElementById("pinModal").style.display = "block";
 }
 
-// TRANSACTIONS
+function closeModal() {
+  document.getElementById("pinModal").style.display = "none";
+}
+
+// =====================
+// SEND MONEY (WITH PIN)
+// =====================
+async function confirmSend() {
+  const toEmail = getInput("toEmail");
+  const amount = getInput("amount");
+  const pin = getInput("pinInput");
+
+  if (!toEmail || !amount || !pin) {
+    return alert("All fields required");
+  }
+
+  try {
+    const res = await fetch(`${API}/wallet/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: getToken()
+      },
+      body: JSON.stringify({ toEmail, amount, pin })
+    });
+
+    const msg = await res.text();
+
+    alert(msg);
+    closeModal();
+
+  } catch (err) {
+    alert("Transfer failed");
+  }
+}
+
+// =====================
+// LOAD TRANSACTIONS
+// =====================
 async function loadTransactions() {
-  const res = await fetch(`${API}/wallet/transactions`, {
-    headers: { Authorization: getToken() }
-  });
+  try {
+    const res = await fetch(`${API}/wallet/transactions`, {
+      headers: {
+        Authorization: getToken()
+      }
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    const list = document.getElementById("list");
 
-  const list = document.getElementById("list");
-  list.innerHTML = "";
+    if (!list) return;
 
-  data.forEach(tx => {
-    list.innerHTML += `
-      <div class="tx">
-        ${tx.type.toUpperCase()} - $${tx.amount}
-      </div>
-    `;
-  });
+    list.innerHTML = "";
+
+    data.forEach(tx => {
+      const color = tx.type === "credit" ? "green" : "red";
+
+      list.innerHTML += `
+        <div class="tx">
+          <b style="color:${color}">
+            ${tx.type.toUpperCase()}
+          </b>
+          <p>$${tx.amount}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.log("Transaction error");
+  }
 }
 
-// NAV
-function goSend() { window.location = "send.html"; }
-function goTransactions() { window.location = "transactions.html"; }
+// =====================
+// NAVIGATION
+// =====================
+function goSend() {
+  window.location = "send.html";
+}
+
+function goTransactions() {
+  window.location = "transactions.html";
+}
+
 function logout() {
   localStorage.removeItem("token");
   window.location = "index.html";
 }
 
-// HELPER
-function emailInput(id) {
-  return document.getElementById(id).value;
+// =====================
+// AUTO LOAD PER PAGE
+// =====================
+if (window.location.pathname.includes("dashboard")) {
+  loadBalance();
 }
 
-// AUTO LOAD
-if (location.pathname.includes("dashboard")) loadBalance();
-if (location.pathname.includes("transactions")) loadTransactions();
+if (window.location.pathname.includes("transactions")) {
+  loadTransactions();
+}
