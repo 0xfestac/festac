@@ -12,8 +12,8 @@ router.post("/send", auth, async (req, res) => {
       return res.status(400).send("Invalid amount");
     }
 
-    if (amt > 5) {
-      return res.status(400).send("Max transfer is $5");
+    if (amt > 50) {
+      return res.status(400).send("Max transfer is $50");
     }
 
     const sender = await User.findById(req.user.id);
@@ -45,7 +45,7 @@ router.post("/send", auth, async (req, res) => {
       sender.lastReset = new Date();
     }
 
-    if ((sender.dailySent || 0) + amt > 20) {
+    if ((sender.dailySent || 0) + amt > 2000) {
       return res.status(400).send("Daily limit reached");
     }
 
