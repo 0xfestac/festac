@@ -4,7 +4,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "npx nodemon --legacy-watch server.js"
+    "festac": "npx nodemon --legacy-watch server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
