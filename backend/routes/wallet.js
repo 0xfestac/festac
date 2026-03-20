@@ -25,6 +25,7 @@ router.get("/balance", auth, async (req, res) => {
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
+    console.log("PIN IN DB:", sender.pin);
 
     // Basic validation
     if (!toEmail || !amount || amount <= 0 || !pin) {
