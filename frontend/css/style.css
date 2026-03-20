@@ -5,6 +5,13 @@ body {
   color: #fff;
 }
 
+body {
+  max-width: 420px;
+  margin: auto;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
 /* Layout */
 .container {
   max-width: 420px;
