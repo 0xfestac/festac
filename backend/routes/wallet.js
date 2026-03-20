@@ -24,6 +24,7 @@ router.get("/balance", auth, async (req, res) => {
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount } = req.body;
+    const bcrypt = require("bcryptjs"); // add this at top
 
     // Validation
     if (!toEmail || !amount || amount <= 0) {
