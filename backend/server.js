@@ -15,7 +15,7 @@ app.use(cors());
 
 // test route
 app.get("/", (req, res) => {
-  res.send("FESTAC IS ACTIVE ❤️‍🔥");
+  res.send("FESTAC IS ACTIVE 🔥");
 });
 
 // connect DB
@@ -34,5 +34,5 @@ app.use((req, res) => {
 
 // start server
 app.listen(5000, () => {
-  console.log("FESTAC is up and running on port 5000");
+  console.log("🚀 FESTAC is up and running on port 5000");
 });
