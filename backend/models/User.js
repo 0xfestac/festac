@@ -8,3 +8,12 @@ const userSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("User", userSchema);
+
+transactions: [
+  {
+    type: { type: String }, // "sent" or "received"
+    email: String,
+    amount: Number,
+    date: { type: Date, default: Date.now }
+  }
+]
