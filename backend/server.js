@@ -20,7 +20,7 @@ app.get("/", (req, res) => {
 
 // connect DB
 mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log("✅ MongoDB Connected"))
+  .then(() => console.log("✅ FESTAC_DB Connected"))
   .catch(err => console.log("❌ ERROR:", err.message));
 
 // routes
@@ -34,5 +34,5 @@ app.use((req, res) => {
 
 // start server
 app.listen(5000, () => {
-  console.log("🚀 Server running on port 5000");
+  console.log("FESTAC is up and running on port 5000");
 });
