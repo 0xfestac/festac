@@ -44,7 +44,7 @@ async function login() {
       saveToken(data.token);
       window.location = "dashboard.html";
     } else {
-      alert("Login failed");
+      showToast("Login failed");
     }
 
   } catch (err) {
