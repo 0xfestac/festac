@@ -1,12 +1,17 @@
 const router = require("express").Router();
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
+const bcrypt = require("bcryptjs");
 
-// ✅ Check balance
+// ✅ Get balance
 router.get("/balance", auth, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  res.json({ balance: user.balance });
+  try {
+    const user = await User.findById(req.user.id);
+    res.json({ balance: user.balance });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
 // ✅ Fund wallet
@@ -34,7 +39,7 @@ router.post("/fund", auth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error funding wallet");
+    res.status(500).send("Funding failed");
   }
 });
 
@@ -43,14 +48,32 @@ router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
 
+    // Validation
+    if (!toEmail || !amount || !pin) {
+      return res.status(400).send("All fields required");
+    }
+
+    if (amount <= 0) {
+      return res.status(400).send("Invalid amount");
+    }
+
+    if (amount > 5) {
+      return res.status(400).send("Max transfer is $5");
+    }
+
     const sender = await User.findById(req.user.id);
     const receiver = await User.findOne({ email: toEmail });
 
     if (!receiver) return res.status(404).send("Receiver not found");
 
-    // PIN check
     if (!sender.pin) return res.status(400).send("Set PIN first");
 
+    // Prevent self transfer
+    if (sender.email === toEmail) {
+      return res.status(400).send("Cannot send to yourself");
+    }
+
+    // PIN check
     const validPin = await bcrypt.compare(pin, sender.pin);
     if (!validPin) return res.status(400).send("Invalid PIN");
 
@@ -83,14 +106,24 @@ router.post("/send", auth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).send("Transfer error");
+    res.status(500).send("Transfer failed");
   }
 });
 
 // ✅ Transaction history
 router.get("/transactions", auth, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  res.json(user.transactions);
+  try {
+    const user = await User.findById(req.user.id);
+
+    // newest first
+    const history = user.transactions.reverse();
+
+    res.json(history);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to fetch transactions");
+  }
 });
 
 module.exports = router;
