@@ -87,3 +87,32 @@ router.post("/send", auth, async (req, res) => {
     res.status(500).send("Transfer failed");
   }
 });
+
+router.post("/fund", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    const amt = parseFloat(amount);
+
+    if (isNaN(amt) || amt <= 0) {
+      return res.status(400).send("Invalid amount");
+    }
+
+    const user = await User.findById(req.user.id);
+
+    user.balance += amt;
+
+    user.transactions.push({
+      type: "credit",
+      amount: amt,
+      from: "Funding"
+    });
+
+    await user.save();
+
+    res.send("Wallet funded successfully");
+
+  } catch (err) {
+    res.status(500).send("Funding failed");
+  }
+});
