@@ -1,18 +1,24 @@
 const mongoose = require("mongoose");
 
+const transactionSchema = new mongoose.Schema({
+  type: String,
+  amount: Number,
+  to: String,
+  from: String,
+  date: { type: Date, default: Date.now }
+});
+
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   balance: { type: Number, default: 0 },
   pin: String,
-  transactions: [
-    {
-      type: { type: String },
-      email: String,
-      amount: Number,
-      date: { type: Date, default: Date.now }
-    }
-  ]
+
+  // ✅ Daily limit tracking
+  dailySent: { type: Number, default: 0 },
+  lastReset: { type: Date, default: Date.now },
+
+  transactions: [transactionSchema]
 });
 
 module.exports = mongoose.model("User", userSchema);
