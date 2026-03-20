@@ -3,37 +3,48 @@ const User = require("../models/User");
 const auth = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
 
-// Balance
+
+// ✅ Get balance
 router.get("/balance", auth, async (req, res) => {
   const user = await User.findById(req.user.id);
   res.json({ balance: user.balance });
 });
 
-// Send
+
+// ✅ Fund wallet
+router.post("/fund", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).send("Invalid amount");
+    }
+
+    const user = await User.findById(req.user.id);
+
+    user.balance += amount;
+
+    user.transactions.push({
+      type: "fund",
+      email: user.email,
+      amount
+    });
+
+    await user.save();
+
+    res.send("Wallet funded");
+
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+
+// ✅ Send money (PIN + limits)
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
-    const MAX_TRANSACTION = 1000; // max per transfer
-const DAILY_LIMIT = 50000; // total per day
 
-// check max per transaction
-if (amount > MAX_TRANSACTION) {
-  return res.status(400).send("Exceeds single transaction limit");
-}
-
-// check daily limit
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-
-const totalSentToday = sender.transactions
-  .filter(t => t.type === "sent" && new Date(t.date) >= today)
-  .reduce((sum, t) => sum + t.amount, 0);
-
-if (totalSentToday + amount > DAILY_LIMIT) {
-  return res.status(400).send("Daily transaction limit reached");
-}
-
-    // validate input
     if (!amount || amount <= 0) {
       return res.status(400).send("Invalid amount");
     }
@@ -49,7 +60,7 @@ if (totalSentToday + amount > DAILY_LIMIT) {
       return res.status(404).send("Receiver not found");
     }
 
-    // 🚨 PIN CHECK
+    // ✅ PIN check
     if (!sender.pin) {
       return res.status(400).send("Set PIN first");
     }
@@ -59,21 +70,38 @@ if (totalSentToday + amount > DAILY_LIMIT) {
       return res.status(400).send("Incorrect PIN");
     }
 
-    // prevent sending to self
+    // ❌ prevent self transfer
     if (sender._id.toString() === receiver._id.toString()) {
       return res.status(400).send("Cannot send to yourself");
     }
 
-    // check balance
+    // ✅ limits
+    const MAX_TRANSACTION = 100000;
+    const DAILY_LIMIT = 500000;
+
+    if (amount > MAX_TRANSACTION) {
+      return res.status(400).send("Exceeds single limit");
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalSentToday = sender.transactions
+      .filter(t => t.type === "sent" && new Date(t.date) >= today)
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    if (totalSentToday + amount > DAILY_LIMIT) {
+      return res.status(400).send("Daily limit reached");
+    }
+
+    // 💸 transfer
     if (sender.balance < amount) {
       return res.status(400).send("Insufficient funds");
     }
 
-    // transfer
     sender.balance -= amount;
     receiver.balance += amount;
 
-    // save transaction
     sender.transactions.push({
       type: "sent",
       email: toEmail,
@@ -97,19 +125,12 @@ if (totalSentToday + amount > DAILY_LIMIT) {
   }
 });
 
-// Transactions
+
+// ✅ Get transactions
 router.get("/transactions", auth, async (req, res) => {
   const user = await User.findById(req.user.id);
   res.json(user.transactions);
-
-  transactions: [
-  {
-    type: String,
-    email: String,
-    amount: Number,
-    date: { type: Date, default: Date.now }
-  }
-]
 });
+
 
 module.exports = router;
