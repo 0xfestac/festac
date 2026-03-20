@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const adminRoutes = require("./routes/admin");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -10,6 +11,7 @@ const walletRoutes = require("./routes/wallet");
 const app = express();
 
 // middleware
+app.use("/admin", adminRoutes);
 app.use(express.json());
 app.use(cors());
 
