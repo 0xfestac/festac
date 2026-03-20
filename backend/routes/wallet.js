@@ -4,6 +4,50 @@ const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
 const mongoose = require("mongoose");
 
+
+// ✅ GET BALANCE
+router.get("/balance", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    res.json({ balance: user.balance });
+  } catch (err) {
+    res.status(500).send("Failed to get balance");
+  }
+});
+
+
+// ✅ FUND WALLET
+router.post("/fund", auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    const amt = parseFloat(amount);
+
+    if (isNaN(amt) || amt <= 0) {
+      return res.status(400).send("Invalid amount");
+    }
+
+    const user = await User.findById(req.user.id);
+
+    user.balance += amt;
+
+    user.transactions.push({
+      type: "credit",
+      amount: amt,
+      from: "self"
+    });
+
+    await user.save();
+
+    res.json({ message: "Wallet funded", balance: user.balance });
+
+  } catch (err) {
+    res.status(500).send("Funding failed");
+  }
+});
+
+
+// ✅ SEND MONEY (YOUR ORIGINAL - FIXED)
 router.post("/send", auth, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -11,7 +55,6 @@ router.post("/send", auth, async (req, res) => {
   try {
     let { toEmail, amount, pin } = req.body;
 
-    // Validation
     if (!toEmail || !amount || !pin) {
       throw new Error("All fields required");
     }
@@ -26,7 +69,6 @@ router.post("/send", auth, async (req, res) => {
       throw new Error("Max transfer is $50");
     }
 
-    // Get users WITH session
     const sender = await User.findById(req.user.id).session(session);
     const receiver = await User.findOne({ email: toEmail }).session(session);
 
@@ -41,13 +83,12 @@ router.post("/send", auth, async (req, res) => {
       throw new Error("Set PIN first");
     }
 
-    // PIN check
     const validPin = await bcrypt.compare(pin, sender.pin);
     if (!validPin) {
       throw new Error("Invalid PIN");
     }
 
-    // DAILY RESET
+    // DAILY LIMIT RESET
     const today = new Date().toDateString();
     const last = sender.lastReset
       ? new Date(sender.lastReset).toDateString()
@@ -58,22 +99,19 @@ router.post("/send", auth, async (req, res) => {
       sender.lastReset = new Date();
     }
 
-    // DAILY LIMIT
     if ((sender.dailySent || 0) + amt > 2000) {
       throw new Error("Daily limit reached");
     }
 
-    // BALANCE CHECK
     if (sender.balance < amt) {
       throw new Error("Insufficient balance");
     }
 
-    // 💰 TRANSFER
+    // TRANSFER
     sender.balance -= amt;
     receiver.balance += amt;
     sender.dailySent = (sender.dailySent || 0) + amt;
 
-    // TRANSACTIONS
     sender.transactions.push({
       type: "debit",
       amount: amt,
@@ -86,11 +124,9 @@ router.post("/send", auth, async (req, res) => {
       from: sender.email
     });
 
-    // SAVE WITH SESSION (ATOMIC)
     await sender.save({ session });
     await receiver.save({ session });
 
-    // ✅ COMMIT
     await session.commitTransaction();
     session.endSession();
 
@@ -100,11 +136,25 @@ router.post("/send", auth, async (req, res) => {
     });
 
   } catch (err) {
-    // ❌ ROLLBACK
     await session.abortTransaction();
     session.endSession();
 
-    res.status(400).send(err.message || "Transfer failed");
+    res.status(400).send(err.message);
   }
 });
+
+
+// ✅ TRANSACTIONS
+router.get("/transactions", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    res.json(user.transactions.reverse());
+
+  } catch (err) {
+    res.status(500).send("Failed to fetch transactions");
+  }
+});
+
+
 module.exports = router;
