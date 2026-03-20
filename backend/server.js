@@ -4,38 +4,54 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// ✅ Routes
 const authRoutes = require("./routes/auth");
 const walletRoutes = require("./routes/wallet");
 
 const app = express();
 
-// Middleware
+// ✅ Middleware
 app.use(express.json());
 app.use(cors());
 
-// Health route
+// ✅ Health check
 app.get("/", (req, res) => {
-  res.send("🚀 FESTAC API LIVE");
+  res.send("🚀 FESTAC IS ACTIVE");
 });
 
-// DB connect
-mongoose.connect(process.env.MONGO_URL)
+// ✅ MongoDB connection
+const MONGO_URL = process.env.MONGO_URL;
+
+if (!MONGO_URL) {
+  console.error("❌ MONGO_URL not found in .env");
+  process.exit(1);
+}
+
+mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => {
     console.error("❌ DB ERROR:", err.message);
     process.exit(1);
   });
 
-// Routes
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 
-// 404
+// ✅ 404 handler (fixes “Cannot POST” confusion)
 app.use((req, res) => {
-  res.status(404).send("Route not found");
+  res.status(404).json({ error: "Route not found" });
 });
 
-// Start server
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running on port ${process.env.PORT}`);
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.error("🔥 ERROR:", err.stack);
+  res.status(500).json({ error: "Server error" });
+});
+
+// ✅ Start server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
