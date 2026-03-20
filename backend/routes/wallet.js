@@ -107,3 +107,4 @@ router.post("/send", auth, async (req, res) => {
     res.status(400).send(err.message || "Transfer failed");
   }
 });
+module.exports = router;
