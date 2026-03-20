@@ -101,6 +101,15 @@ if (totalSentToday + amount > DAILY_LIMIT) {
 router.get("/transactions", auth, async (req, res) => {
   const user = await User.findById(req.user.id);
   res.json(user.transactions);
+
+  transactions: [
+  {
+    type: String,
+    email: String,
+    amount: Number,
+    date: { type: Date, default: Date.now }
+  }
+]
 });
 
 module.exports = router;
