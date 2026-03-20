@@ -47,7 +47,9 @@ router.post("/fund", auth, async (req, res) => {
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
-
+  if (amount > 100) {
+  return res.status(400).send("Limit exceeded");
+}
     // Validation
     if (!toEmail || !amount || !pin) {
       return res.status(400).send("All fields required");
