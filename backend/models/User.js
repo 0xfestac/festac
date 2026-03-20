@@ -17,3 +17,8 @@ transactions: [
     date: { type: Date, default: Date.now }
   }
 ]
+
+pin: {
+  type: String
+}
+
