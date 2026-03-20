@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Festac Wallet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h2>Festac Wallet</h2>
+
+  <div id="auth">
+    <input id="email" placeholder="Email">
+    <input id="password" placeholder="Password" type="password">
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <h3>Balance: $<span id="balance">0</span></h3>
+
+    <input id="receiver" placeholder="Receiver Email">
+    <input id="amount" placeholder="Amount">
+    <button onclick="send()">Send Money</button>
+  </div>
+
+<script src="app.js"></script>
+</body>
+  </html>
