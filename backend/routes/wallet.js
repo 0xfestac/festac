@@ -2,40 +2,49 @@ const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
+
 router.post("/send", auth, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     let { toEmail, amount, pin } = req.body;
 
+    // Validation
     if (!toEmail || !amount || !pin) {
-      return res.status(400).send("All fields required");
+      throw new Error("All fields required");
     }
 
     const amt = parseFloat(amount);
 
     if (isNaN(amt) || amt <= 0) {
-      return res.status(400).send("Invalid amount");
+      throw new Error("Invalid amount");
     }
 
     if (amt > 50) {
-      return res.status(400).send("Max transfer is $50");
+      throw new Error("Max transfer is $50");
     }
 
-    const sender = await User.findById(req.user.id);
-    const receiver = await User.findOne({ email: toEmail });
+    // Get users WITH session
+    const sender = await User.findById(req.user.id).session(session);
+    const receiver = await User.findOne({ email: toEmail }).session(session);
 
-    if (!receiver) return res.status(404).send("Receiver not found");
+    if (!sender) throw new Error("Sender not found");
+    if (!receiver) throw new Error("Receiver not found");
 
     if (sender.email === toEmail) {
-      return res.status(400).send("Cannot send to yourself");
+      throw new Error("Cannot send to yourself");
     }
 
     if (!sender.pin) {
-      return res.status(400).send("Set PIN first");
+      throw new Error("Set PIN first");
     }
 
+    // PIN check
     const validPin = await bcrypt.compare(pin, sender.pin);
     if (!validPin) {
-      return res.status(400).send("Invalid PIN");
+      throw new Error("Invalid PIN");
     }
 
     // DAILY RESET
@@ -49,19 +58,22 @@ router.post("/send", auth, async (req, res) => {
       sender.lastReset = new Date();
     }
 
+    // DAILY LIMIT
     if ((sender.dailySent || 0) + amt > 2000) {
-      return res.status(400).send("Daily limit reached");
+      throw new Error("Daily limit reached");
     }
 
+    // BALANCE CHECK
     if (sender.balance < amt) {
-      return res.status(400).send("Insufficient balance");
+      throw new Error("Insufficient balance");
     }
 
-    // Transfer
+    // 💰 TRANSFER
     sender.balance -= amt;
     receiver.balance += amt;
     sender.dailySent = (sender.dailySent || 0) + amt;
 
+    // TRANSACTIONS
     sender.transactions.push({
       type: "debit",
       amount: amt,
@@ -74,8 +86,13 @@ router.post("/send", auth, async (req, res) => {
       from: sender.email
     });
 
-    await sender.save();
-    await receiver.save();
+    // SAVE WITH SESSION (ATOMIC)
+    await sender.save({ session });
+    await receiver.save({ session });
+
+    // ✅ COMMIT
+    await session.commitTransaction();
+    session.endSession();
 
     res.json({
       message: "Transfer successful",
@@ -83,36 +100,10 @@ router.post("/send", auth, async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Transfer failed");
-  }
-});
+    // ❌ ROLLBACK
+    await session.abortTransaction();
+    session.endSession();
 
-router.post("/fund", auth, async (req, res) => {
-  try {
-    const { amount } = req.body;
-
-    const amt = parseFloat(amount);
-
-    if (isNaN(amt) || amt <= 0) {
-      return res.status(400).send("Invalid amount");
-    }
-
-    const user = await User.findById(req.user.id);
-
-    user.balance += amt;
-
-    user.transactions.push({
-      type: "credit",
-      amount: amt,
-      from: "Funding"
-    });
-
-    await user.save();
-
-    res.send("Wallet funded successfully");
-
-  } catch (err) {
-    res.status(500).send("Funding failed");
+    res.status(400).send(err.message || "Transfer failed");
   }
 });
