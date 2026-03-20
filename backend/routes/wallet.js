@@ -25,9 +25,11 @@ router.post("/send", auth, async (req, res) => {
     const sender = await User.findById(req.user.id);
     const receiver = await User.findOne({ email: toEmail });
 
-    if (!receiver) return res.status(404).send("Receiver not found");
+    if (!receiver) {
+      return res.status(404).send("Receiver not found");
+    }
 
-    // prevent self transfer
+    // prevent sending to yourself
     if (sender._id.toString() === receiver._id.toString()) {
       return res.status(400).send("Cannot send to yourself");
     }
@@ -40,7 +42,7 @@ router.post("/send", auth, async (req, res) => {
     sender.balance -= amount;
     receiver.balance += amount;
 
-    // ✅ SAVE TRANSACTIONS (correct place)
+    // save transactions
     sender.transactions.push({
       type: "sent",
       email: toEmail,
@@ -57,7 +59,9 @@ router.post("/send", auth, async (req, res) => {
     await receiver.save();
 
     res.send("Transfer successful");
+
   } catch (err) {
+    console.error(err); // 👈 log error
     res.status(500).send("Server error");
   }
 });
