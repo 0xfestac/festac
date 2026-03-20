@@ -4,17 +4,13 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
 
-const SECRET = process.env.JWT_SECRET;
-
 // Register
 router.post("/register", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    const exist = await User.findOne({ email });
+    if (exist) return res.status(400).send("User exists");
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -26,10 +22,9 @@ router.post("/register", async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "User created", balance: user.balance });
+    res.send("User created");
 
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).send("Server error");
   }
 });
@@ -39,23 +34,22 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email);
     if (!user) return res.status(400).send("User not found");
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).send("Invalid password");
+    if (!valid) return res.status(400).send("Wrong password");
 
-    const token = jwt.sign({ id: user._id }, SECRET);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
     res.json({ token });
 
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).send("Server error");
   }
 });
 
-// ✅ Set PIN (FIXED)
+// Set PIN
 router.post("/set-pin", auth, async (req, res) => {
   try {
     const { pin } = req.body;
@@ -66,15 +60,12 @@ router.post("/set-pin", auth, async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
-    const hashedPin = await bcrypt.hash(pin, 10);
-    user.pin = hashedPin;
-
+    user.pin = await bcrypt.hash(pin, 10);
     await user.save();
 
-    res.send("PIN set successfully");
+    res.send("PIN set");
 
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).send("Server error");
   }
 });
