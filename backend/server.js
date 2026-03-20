@@ -22,8 +22,8 @@ mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ ERROR:", err.message));
 
-app.use("/api/auth", authRoutes);
-app.use("/api/wallet", walletRoutes);
+const authRoutes = require("./auth");
+const walletRoutes = require("./wallet");
 
 app.listen(5000, () => {
   console.log("🚀 Server running on port 5000");
