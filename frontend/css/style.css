@@ -1,0 +1,86 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #0f172a;
+  color: #fff;
+}
+
+/* Layout */
+.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* Card UI */
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 14px;
+  margin-top: 20px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #334155;
+  color: white;
+  font-size: 14px;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+/* Navbar */
+.nav {
+  background: #020617;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Balance Card */
+.balance-card {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-radius: 16px;
+  padding: 25px;
+  margin-top: 20px;
+}
+
+.balance {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+/* Actions */
+.actions button {
+  margin-top: 10px;
+}
+
+/* Transaction list */
+.tx {
+  background: #334155;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+}
