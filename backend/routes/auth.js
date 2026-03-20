@@ -34,17 +34,21 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email);
+    const user = await User.findOne({ email });
     if (!user) return res.status(400).send("User not found");
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).send("Wrong password");
+    const valid = await require("bcryptjs").compare(password, user.password);
+    if (!valid) return res.status(400).send("Invalid password");
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const token = require("jsonwebtoken").sign(
+      { id: user._id },
+      process.env.JWT_SECRET
+    );
 
     res.json({ token });
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
