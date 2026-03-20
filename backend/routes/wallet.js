@@ -1,55 +1,77 @@
-require("dotenv").config();
-
 const router = require("express").Router();
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
+const bcrypt = require("bcryptjs");
 
-const SECRET = process.env.JWT_SECRET;
-
-// Register
-router.post("/register", async (req, res) => {
+// Get balance
+router.get("/balance", auth, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const user = await User.findById(req.user.id);
+    res.json({ balance: user.balance });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+// Send money
+router.post("/send", auth, async (req, res) => {
+  try {
+    const { toEmail, amount, pin } = req.body;
+
+    // validate input
+    if (!toEmail || !amount || !pin) {
+      return res.status(400).send("All fields required");
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const sender = await User.findById(req.user.id);
+    const receiver = await User.findOne({ email: toEmail });
 
-    const user = new User({
-      email,
-      password: hashed,
-      balance: 0.99
+    if (!receiver) {
+      return res.status(404).send("Receiver not found");
+    }
+
+    // check PIN
+    if (!sender.pin) {
+      return res.status(400).send("Set PIN first");
+    }
+
+    const validPin = await bcrypt.compare(pin, sender.pin);
+    if (!validPin) {
+      return res.status(400).send("Invalid PIN");
+    }
+
+    // prevent self transfer
+    if (sender._id.toString() === receiver._id.toString()) {
+      return res.status(400).send("Cannot send to yourself");
+    }
+
+    // check balance
+    if (sender.balance < amount) {
+      return res.status(400).send("Insufficient funds");
+    }
+
+    // transfer
+    sender.balance -= amount;
+    receiver.balance += amount;
+
+    // save transactions
+    sender.transactions.push({
+      type: "sent",
+      email: toEmail,
+      amount
     });
 
-    await user.save();
+    receiver.transactions.push({
+      type: "received",
+      email: sender.email,
+      amount
+    });
 
-    res.json({ message: "User created with $0.99 bonus", balance: user.balance });
+    await sender.save();
+    await receiver.save();
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// Login
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).send("User not found");
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).send("Invalid password");
-
-    const token = jwt.sign({ id: user._id }, SECRET);
-
-    res.json({ token });
+    res.send("Transfer successful");
 
   } catch (err) {
     console.error(err);
@@ -57,25 +79,11 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Set PIN
-router.post("/set-pin", auth, async (req, res) => {
+// Get transactions
+router.get("/transactions", auth, async (req, res) => {
   try {
-    const { pin } = req.body;
-
-    if (!pin || pin.length !== 4) {
-      return res.status(400).send("PIN must be 4 digits");
-    }
-
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).send("User not found");
-
-    const hashedPin = await bcrypt.hash(pin, 10);
-    user.pin = hashedPin;
-
-    await user.save();
-
-    res.send("PIN set successfully");
-
+    res.json(user.transactions);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
