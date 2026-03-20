@@ -13,6 +13,25 @@ router.get("/balance", auth, async (req, res) => {
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
+    const MAX_TRANSACTION = 1000; // max per transfer
+const DAILY_LIMIT = 50000; // total per day
+
+// check max per transaction
+if (amount > MAX_TRANSACTION) {
+  return res.status(400).send("Exceeds single transaction limit");
+}
+
+// check daily limit
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const totalSentToday = sender.transactions
+  .filter(t => t.type === "sent" && new Date(t.date) >= today)
+  .reduce((sum, t) => sum + t.amount, 0);
+
+if (totalSentToday + amount > DAILY_LIMIT) {
+  return res.status(400).send("Daily transaction limit reached");
+}
 
     // validate input
     if (!amount || amount <= 0) {
