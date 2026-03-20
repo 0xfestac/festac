@@ -1,5 +1,5 @@
 module.exports = function (req, res, next) {
-  if (req.user.role !== "admin") {
+  if (!req.user.isAdmin) {
     return res.status(403).json("Access denied: Admins only");
   }
   next();
