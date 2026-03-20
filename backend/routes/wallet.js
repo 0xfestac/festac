@@ -1,54 +1,8 @@
-const router = require("express").Router();
-const User = require("../models/User");
-const auth = require("../middleware/auth");
-const bcrypt = require("bcryptjs");
-
-// ✅ Get balance
-router.get("/balance", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.json({ balance: user.balance });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// ✅ Fund wallet
-router.post("/fund", auth, async (req, res) => {
-  try {
-    const { amount } = req.body;
-
-    if (!amount || amount <= 0) {
-      return res.status(400).send("Invalid amount");
-    }
-
-    const user = await User.findById(req.user.id);
-
-    user.balance += amount;
-
-    user.transactions.push({
-      type: "credit",
-      amount,
-      from: "self"
-    });
-
-    await user.save();
-
-    res.send("Wallet funded");
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Funding failed");
-  }
-});
-
-// ✅ Send money
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
 
-    // ✅ Validation
+    // Validation
     if (!toEmail || !amount || !pin) {
       return res.status(400).send("All fields required");
     }
@@ -57,9 +11,9 @@ router.post("/send", auth, async (req, res) => {
       return res.status(400).send("Invalid amount");
     }
 
-    // ✅ Limit per transaction
-    if (amount > 5) {
-      return res.status(400).send("Max transfer is $5");
+    // Per transaction limit
+    if (amount > 50) {
+      return res.status(400).send("Max transfer is $50");
     }
 
     const sender = await User.findById(req.user.id);
@@ -67,27 +21,42 @@ router.post("/send", auth, async (req, res) => {
 
     if (!receiver) return res.status(404).send("Receiver not found");
 
-    // ❌ Prevent self transfer
     if (sender.email === toEmail) {
       return res.status(400).send("Cannot send to yourself");
     }
 
-    // 🔐 PIN check
     if (!sender.pin) return res.status(400).send("Set PIN first");
 
+    // PIN check
     const validPin = await bcrypt.compare(pin, sender.pin);
     if (!validPin) return res.status(400).send("Invalid PIN");
 
-    // 💰 Balance check
+    // ✅ DAILY LIMIT RESET
+    const today = new Date().toDateString();
+    const last = new Date(sender.lastReset).toDateString();
+
+    if (today !== last) {
+      sender.dailySent = 0;
+      sender.lastReset = new Date();
+    }
+
+    // ✅ DAILY LIMIT CHECK
+    if (sender.dailySent + amount > 2000) {
+      return res.status(400).send("Daily limit reached");
+    }
+
+    // Balance check
     if (sender.balance < amount) {
       return res.status(400).send("Insufficient balance");
     }
 
-    // 💸 Transfer
+    // Transfer
     sender.balance -= amount;
     receiver.balance += amount;
 
-    // 📊 Save transactions
+    sender.dailySent += amount;
+
+    // Save transactions
     sender.transactions.push({
       type: "debit",
       amount,
@@ -110,21 +79,3 @@ router.post("/send", auth, async (req, res) => {
     res.status(500).send("Transfer failed");
   }
 });
-
-// ✅ Transaction history
-router.get("/transactions", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-
-    // newest first (safe)
-    const history = [...user.transactions].reverse();
-
-    res.json(history);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Failed to fetch transactions");
-  }
-});
-
-module.exports = router;
