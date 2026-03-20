@@ -3,7 +3,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const SECRET = "festac_secret";
+const SECRET = process.env.JWT_SECRET;
 
 // Register
 router.post("/register", async (req, res) => {
