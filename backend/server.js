@@ -5,19 +5,19 @@ const cors = require("cors");
 
 const app = express();
 
+app.use(express.json());
+app.use(cors());
+
 app.get("/", (req, res) => {
   res.send("FESTAC IS ACTIVE 🔥");
 });
 
-app.use(express.json());
-app.use(cors());
-
 const MONGO_URL = process.env.MONGO_URL;
-
-console.log("🔥 USING ATLAS:", MONGO_URL);
 
 mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ ERROR:", err.message));
+  .catch(err => console.log("❌ ERROR:", err));
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+app.listen(5000, () => {
+  console.log("🚀 Server running on port 5000");
+});
