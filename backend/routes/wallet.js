@@ -14,24 +14,58 @@ router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
 
+    // validate input
+    if (!amount || amount <= 0) {
+      return res.status(400).send("Invalid amount");
+    }
+
+    if (!pin) {
+      return res.status(400).send("PIN required");
+    }
+
     const sender = await User.findById(req.user.id);
     const receiver = await User.findOne({ email: toEmail });
 
-    if (!receiver) return res.status(404).send("Receiver not found");
+    if (!receiver) {
+      return res.status(404).send("Receiver not found");
+    }
 
-    if (!sender.pin) return res.status(400).send("Set PIN first");
+    // 🚨 PIN CHECK
+    if (!sender.pin) {
+      return res.status(400).send("Set PIN first");
+    }
 
-    const valid = await bcrypt.compare(pin, sender.pin);
-    if (!valid) return res.status(400).send("Wrong PIN");
+    const isMatch = await bcrypt.compare(pin, sender.pin);
+    if (!isMatch) {
+      return res.status(400).send("Incorrect PIN");
+    }
 
-    if (sender.balance < amount)
+    // prevent sending to self
+    if (sender._id.toString() === receiver._id.toString()) {
+      return res.status(400).send("Cannot send to yourself");
+    }
+
+    // check balance
+    if (sender.balance < amount) {
       return res.status(400).send("Insufficient funds");
+    }
 
+    // transfer
     sender.balance -= amount;
     receiver.balance += amount;
 
-    sender.transactions.push({ type: "sent", email: toEmail, amount });
-    receiver.transactions.push({ type: "received", email: sender.email, amount });
+    // save transaction
+    sender.transactions.push({
+      type: "sent",
+      email: toEmail,
+      amount
+    });
+
+    receiver.transactions.push({
+      type: "received",
+      email: sender.email,
+      amount
+    });
 
     await sender.save();
     await receiver.save();
