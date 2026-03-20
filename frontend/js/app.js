@@ -246,3 +246,8 @@ function showToast(message) {
   }, 3000);
 }
 app.use(cors());
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("SW registered"));
+}
