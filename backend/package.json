@@ -1,11 +1,10 @@
 {
   "name": "festac-backend",
   "version": "1.0.0",
-  "description": "Festac wallet backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "npx nodemon --legacy-watch server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
