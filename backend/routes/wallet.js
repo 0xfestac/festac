@@ -1,3 +1,7 @@
+const router = require("express").Router();
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const auth = require("../middleware/auth");
 router.post("/send", auth, async (req, res) => {
   try {
     let { toEmail, amount, pin } = req.body;
