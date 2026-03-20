@@ -47,10 +47,8 @@ router.post("/fund", auth, async (req, res) => {
 router.post("/send", auth, async (req, res) => {
   try {
     const { toEmail, amount, pin } = req.body;
-  if (amount > 100) {
-  return res.status(400).send("Limit exceeded");
-}
-    // Validation
+
+    // ✅ Validation
     if (!toEmail || !amount || !pin) {
       return res.status(400).send("All fields required");
     }
@@ -59,6 +57,7 @@ router.post("/send", auth, async (req, res) => {
       return res.status(400).send("Invalid amount");
     }
 
+    // ✅ Limit per transaction
     if (amount > 5) {
       return res.status(400).send("Max transfer is $5");
     }
@@ -68,27 +67,27 @@ router.post("/send", auth, async (req, res) => {
 
     if (!receiver) return res.status(404).send("Receiver not found");
 
-    if (!sender.pin) return res.status(400).send("Set PIN first");
-
-    // Prevent self transfer
+    // ❌ Prevent self transfer
     if (sender.email === toEmail) {
       return res.status(400).send("Cannot send to yourself");
     }
 
-    // PIN check
+    // 🔐 PIN check
+    if (!sender.pin) return res.status(400).send("Set PIN first");
+
     const validPin = await bcrypt.compare(pin, sender.pin);
     if (!validPin) return res.status(400).send("Invalid PIN");
 
-    // Balance check
+    // 💰 Balance check
     if (sender.balance < amount) {
       return res.status(400).send("Insufficient balance");
     }
 
-    // Transfer
+    // 💸 Transfer
     sender.balance -= amount;
     receiver.balance += amount;
 
-    // Save transactions
+    // 📊 Save transactions
     sender.transactions.push({
       type: "debit",
       amount,
@@ -117,8 +116,8 @@ router.get("/transactions", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
-    // newest first
-    const history = user.transactions.reverse();
+    // newest first (safe)
+    const history = [...user.transactions].reverse();
 
     res.json(history);
 
