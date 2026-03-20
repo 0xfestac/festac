@@ -42,4 +42,8 @@ receiver.transactions.push({
   amount
 });
 
+router.get("/transactions", auth, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  res.json(user.transactions);
+});
 
